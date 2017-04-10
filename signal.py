@@ -13,8 +13,8 @@ class Policy(nn.Module):
         super(Policy, self).__init__()
         self.fc = nn.Linear(1, 2)
 
-        self.sm = torch.Tensor([0])
-        self.lm = torch.Tensor([0])
+        self.sm = Variable(torch.Tensor([0])) # short memory
+        self.lm = Variable(torch.Tensor([0])) # long memory
         self.saved_actions = []
         self.rewards = []
 
@@ -56,11 +56,10 @@ def learn():
     reward = model.rewards[-1]
     action.reinforce(reward)
     optimizer.zero_grad()
-    autograd.backward([action], [None])affine1
+    autograd.backward([action], [None])
     optimizer.step()
 
 
-running_reward = 10
 for i_episode in count(1):
     state = env.reset()
     for t in range(10000):
