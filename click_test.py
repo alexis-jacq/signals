@@ -22,7 +22,6 @@ class Policy(nn.Module):
     def __init__(self):
         super(Policy, self).__init__()
         self.fc1 = nn.Linear(2, 2)
-        self.fc2 = nn.Linear(2, 2)
 
         self.sm = Variable(torch.Tensor([0,0])).unsqueeze(0) # short memory
         self.lm = Variable(torch.Tensor([0,0])).unsqueeze(0) # long memory
@@ -34,8 +33,7 @@ class Policy(nn.Module):
         signal = torch.abs(self.sm - self.lm)
         print(signal)
 
-        y = F.relu(self.fc1(signal))
-        action_scores = self.fc2(signal)
+        action_scores = self.fc1(signal)
 
         self.lm = 0.99*self.lm + 0.01*x
 
