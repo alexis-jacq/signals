@@ -46,6 +46,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-2)
 
 def select_action(state):
     probs = model(Variable(state))
+    print(probs)
     action = probs.multinomial()
     return action
 
@@ -58,8 +59,6 @@ def rand_learn():
     optimizer.zero_grad()
     autograd.backward([action], [None], retain_variables=True)
     optimizer.step()
-    #del model.rewards[indice]
-    #del model.saved_actions[indice]
 
 
 def learn():
@@ -69,8 +68,6 @@ def learn():
     optimizer.zero_grad()
     autograd.backward([action], [None], retain_variables=True)
     optimizer.step()
-    #del model.rewards[-1]
-    #del model.saved_actions[-1]
 
 def update(signal):
     signal = torch.Tensor([signal,signal]).float().unsqueeze(0)
@@ -83,7 +80,7 @@ def update(signal):
     if action.data[0,0]==1 and goal==0:
             reward = -1
 
-    if reward>0 or np.random.rand()>0.9 or len(model.saved_actions)<100:
+    if np.abs(reward)>0 or np.random.rand()>0.9 or len(model.saved_actions)<10:
         model.rewards.append(reward)
         model.saved_actions.append(action)
 
