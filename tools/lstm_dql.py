@@ -24,7 +24,7 @@ class Policy(nn.Module):
 
         self.lstm = nn.LSTMCell(2, 2)
         self.fc = nn.Linear(2, 2)
-        self.softmax = nn.LogSoftmax()
+        #self.softmax = nn.LogSoftmax()
 
         self.states = []
         self.next_states = []
@@ -36,25 +36,21 @@ class Policy(nn.Module):
     def forward(self, input, hidden):
         hx,cx = self.lstm(input,hidden)
         output = self.fc(hx)
-        output = self.softmax(output)
+        #output = self.softmax(output)
         return output, hx, cx
 
     def initHidden(self):
-        global hidden_state
-        global cell_state
-        cell_state = Variable(torch.zeros(1,2))
-        hidden_state = Variable(torch.zeros(1,2))
+        self.cell_state = Variable(torch.zeros(1,2))
+        self.hidden_state = Variable(torch.zeros(1,2))
 
 model = Policy()
 model.initHidden()
-last_hidden = hidden_state
-last_cell = cell_state
+last_hidden = model.hidden_state
+last_cell = model.cell_state
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 def select_action(state):
-    global hidden_state
-    global cell_state
-    output, hidden_state, cell_state = model(state, [hidden_state, cell_state])
+    output, model.hidden_state, model.cell_state = model(state, [model.hidden_state, model.cell_state])
     print('val '+str(output.data))
     probs = F.softmax(output)
     print('probs '+str(probs.data))
@@ -103,8 +99,8 @@ def update(signal):
         model.hiddens.append(last_hidden)
         model.cells.append(last_cell)
 
-    last_hidden = hidden_state
-    last_cell = cell_state
+    last_hidden = model.hidden_state
+    last_cell = model.cell_state
     action = select_action(state)
     print(action)
 
