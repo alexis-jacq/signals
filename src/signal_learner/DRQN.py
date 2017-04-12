@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#coding: utf-8
 
 import numpy as np
 
@@ -38,7 +40,7 @@ class Policy(nn.Module):
         self.hidden_state = Variable(torch.zeros(1,self.input_size))
 
 
-class drqn():
+class Drqn():
     def __init__(input_size=6, nb_action=2, gamma=0.9):
         self.gamma = gamma
 
@@ -84,7 +86,7 @@ class drqn():
         self.optimizer.step()
 
     def update(self, reward, new_signal):
-        new_state = Variable(torch.Tensor([new_signal,0]).float()).unsqueeze(0)
+        new_state = Variable(torch.Tensor([new_signal]).float()).unsqueeze(0)
 
         if np.abs(self.last_reward)>0 or np.random.rand()>0.9 or len(self.model.states)<10:
             self.model.states.append(self.last_state)
@@ -106,3 +108,5 @@ class drqn():
         self.last_action = action
         self.last_state = new_state
         self.last_reward = reward
+
+        return action

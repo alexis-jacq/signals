@@ -10,31 +10,42 @@ import tf
 
 from geometry_msgs.msg import PointStamped
 from std_msgs.msg import String, Empty, Header
-from naoStoryTelling import story_gestures as sg
-from nextChoice import story_maker as sm
-from nextChoice.story_maker import story
-from nextChoice.decision2 import *
-
-from naoqi import ALProxy
-from naoqi import ALBroker
-from naoqi import ALModule
 
 ########################################## ros publishers
-# for nao_actions:
-pub_robot_target = rospy.Publisher('robot_target_topic', String, queue_size=1)
-pub_robot_say = rospy.Publisher('robot_say_topic', String, queue_size=1)
-pub_robot_say_long = rospy.Publisher('robot_say_long_topic', String, queue_size=1)
-pub_robot_point = rospy.Publisher('robot_point_topic', String, queue_size=1)
-pub_exit = rospy.Publisher('exit_topic', String, queue_size=1)
+# for brain:
+pub_reward = rospy.Publisher('reward', String, queue_size=1)
 
-# for interface:
-pub_human_turn = rospy.Publisher('human_turn_topic', String, queue_size=1)
-pub_human_chosen = rospy.Publisher('human_chosen_topic', String, queue_size=1)
-pub_human_predict = rospy.Publisher('human_predict_turn_topic', String, queue_size=1)
-pub_robot_turn = rospy.Publisher('robot_turn_topic', String, queue_size=1)
-pub_robot_chosen = rospy.Publisher('robot_chosen_topic', String, queue_size=1)
-pub_new_element = rospy.Publisher('new_element', String, queue_size=1)
+########################################## global values
+goal = 0
+var_goal = StringVar()
+action = 0
 
-# for withmeness
-pub_state = rospy.Publisher('state_activity', String, queue_size=1)
-########################################## publishing
+########################################## functions
+def onReceiveAction(msg):
+    global action
+    action_msg = str(msg.data)
+    action = float(action_msg)
+
+def setGoal(new_goal):
+    global goal
+    goal = new_goal
+    var_goal.set('goal = '+str(goal))
+
+########################################## interface objects
+master = Tk()
+Button(master, text='goal 0', height = 10, width = 30, command=lambda:set_goal(0)).grid(row=0, column=0, sticky=W, pady=4)
+Button(master, text='goal 1', height = 10, width = 30, command=lambda:set_goal(1)).grid(row=0, column=1, sticky=W, pady=4)
+Label(master, height = 10, textvariable = var_goal).grid(row=1, sticky=EW, pady=4)
+
+########################################## ros loop
+def ros_loop(test):
+	while True:
+		rospy.Subscriber('action', String, onReceiveAction)
+		rospy.sleep(0.1)
+	rospy.spin()
+
+######################################### main loop
+if __name__=="__main__":
+	rospy.init_node("main_activity")
+    thread.start_new_thread(ros_loop, ("",))
+    root.mainloop()
