@@ -21,7 +21,7 @@ catkin_package(
 install(PROGRAMS
   nodes/body.py
   nodes/brain.py
-  nodes/interface.py
+  nodes/main_activity.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
