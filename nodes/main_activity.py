@@ -46,6 +46,6 @@ def ros_loop(test):
 
 ######################################### main loop
 if __name__=="__main__":
-	rospy.init_node("main_activity")
+    rospy.init_node("main_activity")
     thread.start_new_thread(ros_loop, ("",))
     root.mainloop()
