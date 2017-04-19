@@ -56,7 +56,7 @@ class Drqn():
 
     def select_action(self, state):
         output, self.model.hidden_state, self.model.cell_state = self.model(state, [self.model.hidden_state, self.model.cell_state])
-        probs = F.softmax(output)
+        probs = F.softmax(output*5)
         action = probs.multinomial()
         return action.data[0,0]
 
@@ -88,13 +88,14 @@ class Drqn():
     def update(self, reward, new_signal):
         new_state = Variable(torch.Tensor(new_signal).float()).unsqueeze(0)
 
-        if np.abs(self.last_reward)>0 or np.random.rand()>0.9 or len(self.model.states)<10:
+        if self.last_reward>0 or np.random.rand()>0.9 or len(self.model.states)<10:
             self.model.states.append(self.last_state)
             self.model.next_states.append(new_state)
             self.model.rewards.append(self.last_reward)
             self.model.actions.append(self.last_action)
             self.model.hiddens.append(self.last_hidden)
             self.model.cells.append(self.last_cell)
+
 
         self.last_hidden = self.model.hidden_state
         self.last_cell = self.model.cell_state

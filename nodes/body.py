@@ -122,6 +122,7 @@ if __name__=="__main__":
             #msg.data = str(x)+"_"+str(y)+"_"+str(z)+"_"+str(r)+"_"+str(p)+"_"+str(y)
             msg.data = str(r)+"_"+str(p)+"_"+str(y)
             pub_signal.publish(msg.data)
+            #TODO: slow a lot the frequency of publication
 
         rospy.sleep(0.2)
 
