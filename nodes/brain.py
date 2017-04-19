@@ -16,9 +16,9 @@ from learningSignals.agents import Drqn
 pub_action = rospy.Publisher('action', String, queue_size = 1)
 
 ############################################# global values
-agent = Drqn(input_size=6, nb_action=2, gamma=0.9)
+agent = Drqn(input_size=3, nb_action=2, gamma=0.9)
 stop = False
-signal = [0,0,0,0,0,0]
+signal = [0,0,0]
 reward = 0
 received_signal = False
 received_reward = True

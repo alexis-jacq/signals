@@ -119,7 +119,8 @@ if __name__=="__main__":
             y = -np.sign(euler[2])*(np.abs(euler[2])-np.pi/2.)
             '''
             msg = String()
-            msg.data = str(x)+"_"+str(y)+"_"+str(z)+"_"+str(r)+"_"+str(p)+"_"+str(y)
+            #msg.data = str(x)+"_"+str(y)+"_"+str(z)+"_"+str(r)+"_"+str(p)+"_"+str(y)
+            msg.data = str(r)+"_"+str(p)+"_"+str(y)
             pub_signal.publish(msg.data)
 
         rospy.sleep(0.2)
