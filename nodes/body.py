@@ -72,7 +72,14 @@ if __name__=="__main__":
     '''
 
     listener = tf.TransformListener()
-    listener.waitForTransform('/base_footprint','/face_0', rospy.Time(0), rospy.Duration(4.0))
+    face_found = False
+    while not face_found:
+        try:
+            listener.waitForTransform('/base_footprint','/face_0', rospy.Time(0), rospy.Duration(4.0))
+            rospy.loginfo('face detected !')
+            face_found = True
+        except tf.Exception:
+            pass
 
     while not stop:
 

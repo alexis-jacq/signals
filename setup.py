@@ -12,6 +12,6 @@ setup(name='signalLearner',
       author='Alexis Jacq',
       author_email='alexis.jacq@gmail.com',
       package_dir = {'': 'src'},
-      packages=['signal_learner'],
+      packages=['learningSignals'],
       data_files=[('share/doc/', ['AUTHORS', 'LICENSE', 'README.md'])]
       )
