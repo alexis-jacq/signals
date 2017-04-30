@@ -20,6 +20,7 @@ agent = Drqn(input_size=3, nb_action=2, gamma=0.9)
 stop = False
 signal = [0,0,0]
 reward = 0
+key = 0
 received_signal = False
 received_reward = True
 
@@ -32,17 +33,26 @@ def onReceiveSignal(msg):
     global signal
     global received_signal
     signal_msg = str(msg.data)
-    signal = [float(i) for i in signal_msg.split('_')]
-    received_signal = True
-    rospy.loginfo('signal: '+str(signal))
+    new_signal = [float(i) for i in signal_msg.split('_')]
+    if new_signal!=signal:
+        received_signal = True
+        rospy.loginfo('signal: '+str(new_signal))
+        signal = new_signal
+
 
 def onReceiveReward(msg):
     global reward
+    global key
     global received_reward
     reward_msg = str(msg.data)
-    reward = float(reward_msg)
-    received_reward = True
-    rospy.loginfo('reward: '+reward_msg)
+    new_reward, new_key = float(reward_msg.split('_')[0]), float(reward_msg.split('_')[1])
+    #rospy.loginfo('new_key: '+str(new_key))
+    #rospy.loginfo('key: '+str(key))
+    if new_key!=key:
+        reward = new_reward
+        key = new_key
+        received_reward = True
+        rospy.loginfo('reward: '+str(reward))
 
 ############################################# main loop
 if __name__=="__main__":
@@ -54,11 +64,11 @@ if __name__=="__main__":
         rospy.Subscriber('reward', String, onReceiveReward)
 
         if received_reward and received_signal:
-            rospy.loginfo('first update !')
+            rospy.loginfo('update !')
             action = agent.update(reward, signal)
             rospy.loginfo('action: '+str(action))
             msg = String()
-            msg.data = str(action)
+            msg.data = str(action)+'_'+str(np.random.rand())
             pub_action.publish(msg)
             received_signal = False
             received_reward = False

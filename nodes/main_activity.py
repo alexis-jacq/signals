@@ -22,22 +22,27 @@ var_goal = StringVar()
 var_last_action = StringVar()
 goal = 0
 action = 0
+key = 0
 
 ########################################## functions
 def onReceiveAction(msg):
     global action
+    global key
     action_msg = str(msg.data)
-    action = float(action_msg)
-    var_last_action.set('last_action = '+action_msg)
-    reward = 0
-    if action>0:
-        if goal>0:
-            reward = 1
-        else:
-            reward = -1
-    msg = String()
-    msg.data = str(reward)
-    pub_reward.publish(msg)
+    new_action, new_key = float(action_msg.split('_')[0]), float(action_msg.split('_')[1])
+    if True:#new_key!=key:
+        action = new_action
+        key = new_key
+        var_last_action.set('last_action = '+str(action))
+        reward = 0
+        if action>0:
+            if goal>0:
+                reward = 1
+            else:
+                reward = -1
+        msg = String()
+        msg.data = str(reward)+'_'+str(np.random.rand())
+        pub_reward.publish(msg)
 
 def setGoal(new_goal):
     global goal
