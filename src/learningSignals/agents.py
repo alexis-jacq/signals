@@ -41,12 +41,12 @@ class Policy(nn.Module):
 
 
 class Drqn():
-    def __init__(self, input_size=6, nb_action=2, gamma=0.9):
+    def __init__(self, input_size=6, nb_action=2, gamma=0.1):
         self.gamma = gamma
 
         self.model = Policy(input_size, nb_action)
         self.model.initHidden()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=0.01)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=0.1)
 
         self.last_hidden = self.model.hidden_state
         self.last_cell = self.model.cell_state
@@ -56,7 +56,8 @@ class Drqn():
 
     def select_action(self, state):
         output, self.model.hidden_state, self.model.cell_state = self.model(state, [self.model.hidden_state, self.model.cell_state])
-        probs = F.softmax(output*5)
+        probs = F.softmax(output)
+        self.scores = probs
         action = probs.multinomial()
         return action.data[0,0]
 
@@ -71,8 +72,8 @@ class Drqn():
         output, next_hidden, next_cell = self.model(state, [hidden, cell])
         value = output[0,action]
         output,_,_ = self.model(next_state, [next_hidden.detach(), next_hidden.detach()])
-        #'''
-        next_action_probs = F.softmax(output)
+        '''
+        next_action_probs = F.softmax(output+1e-16)
         next_action = next_action_probs.multinomial().data[0,0]
         next_value = output[0,next_action]
         '''
@@ -88,23 +89,32 @@ class Drqn():
     def update(self, reward, new_signal):
         new_state = Variable(torch.Tensor(new_signal).float()).unsqueeze(0)
 
-        if self.last_reward>0 or np.random.rand()>0.9 or len(self.model.states)<10:
+        if self.last_action!=0 or len(self.model.states)<1:#np.abs(self.last_reward)>0 or np.random.rand()>0.9 or len(self.model.states)<100:
             self.model.states.append(self.last_state)
             self.model.next_states.append(new_state)
             self.model.rewards.append(self.last_reward)
             self.model.actions.append(self.last_action)
             self.model.hiddens.append(self.last_hidden)
             self.model.cells.append(self.last_cell)
-
+            if len(self.model.states)>10000:
+                del self.model.states[0]
+                del self.model.next_states[0]
+                del self.model.rewards[0]
+                del self.model.actions[0]
+                del self.model.hiddens[0]
+                del self.model.cells[0]
 
         self.last_hidden = self.model.hidden_state
         self.last_cell = self.model.cell_state
         action = self.select_action(new_state)
 
+        self.learn(np.random.choice(len(self.model.states)))
+        '''
         if action==0:
             self.learn(np.random.choice(len(self.model.states)))
         else:
             self.learn(-1)
+        '''
 
         self.last_action = action
         self.last_state = new_state

@@ -32,6 +32,8 @@ angles = [0,0] #HACK : will be longer in futur !
 Zpitch = 0
 Zyaw = 0
 stop = False
+phase = 0
+t = 0
 
 ''' no robot for the moment
 ############################################# init proxies
@@ -60,6 +62,10 @@ def onReceiveAction(msg):
 def onExit(msg):
     global stop
     stop = True
+
+def onNewPhase(msg):
+    global phase
+    phase = int(msg.data)
 
 
 ############################################# main loop
@@ -90,6 +96,9 @@ if __name__=="__main__":
 
         rospy.Subscriber('exit_topic', String, onExit)
 
+        # for test-trainig with sinusoids
+        rospy.Subscriber('phase', String, onNewPhase)
+
         ''' no robot for the moment
         if action:
             time.sleep(1)
@@ -97,7 +106,7 @@ if __name__=="__main__":
         '''
 
         if "base_footprint" in test and "robot_head" in test and "face_0" in test:
-            rospy.loginfo("frames found! (head condition")
+            #rospy.loginfo("frames found! (head condition")
 
             (pose,rot) = listener.lookupTransform('/robot_head','/face_0', rospy.Time(0))
 
@@ -115,11 +124,21 @@ if __name__=="__main__":
             p = euler[0]
             y = euler[2]
             '''
+            '''
             # if perspective taking:
             r = euler[1]
             p = Zpitch + euler[0] - np.pi/2.
             y = Zyaw - np.sign(euler[2])*(np.abs(euler[2])-np.pi/2.)
-
+            '''
+            # for test-trainig with sinusoids
+            r = 0
+            if phase==0:
+                p = np.sin(t)
+                y = 0
+            else:
+                p = 0
+                y = np.sin(t)
+            t+=1
 
             msg = String()
             #msg.data = str(x)+"_"+str(y)+"_"+str(z)+"_"+str(r)+"_"+str(p)+"_"+str(y)

@@ -15,6 +15,10 @@ from learningSignals.agents import Drqn
 ############################################# publish action to main_activity (and to body)
 pub_action = rospy.Publisher('action', String, queue_size = 1)
 
+# for training:
+pub_scores = rospy.Publisher('scores', String, queue_size = 1)
+pub_hiddens = rospy.Publisher('hiddens', String, queue_size = 1)
+
 ############################################# global values
 agent = Drqn(input_size=3, nb_action=2, gamma=0.9)
 stop = False
@@ -64,14 +68,20 @@ if __name__=="__main__":
         rospy.Subscriber('reward', String, onReceiveReward)
 
         if received_signal:#received_reward and received_signal:
-            rospy.loginfo('update !')
+            #rospy.loginfo('update !')
             action = agent.update(reward, signal)
-            rospy.loginfo('action: '+str(action))
+            #rospy.loginfo('action: '+str(action))
             msg = String()
             msg.data = str(action)+'_'+str(np.random.rand())
             pub_action.publish(msg)
             received_signal = False
             received_reward = False
+            #for training:
+            msg_scores = String(); msg_hiddens = String()
+            msg_scores.data = str(agent.scores*100)
+            msg_hiddens.data = str(agent.last_hidden*100)
+            pub_scores.publish(msg_scores)
+            pub_hiddens.publish(msg_hiddens)
 
         rospy.sleep(0.3)
     rospy.spin()

@@ -16,6 +16,9 @@ from Tkinter import *
 # for brain:
 pub_reward = rospy.Publisher('reward', String, queue_size=1)
 
+# for training-test with sinusoids:
+pub_phase = rospy.Publisher('phase', String, queue_size=1)
+
 ########################################## global values
 master = Tk()
 var_goal = StringVar()
@@ -48,6 +51,9 @@ def setGoal(new_goal):
     global goal
     goal = new_goal
     var_goal.set('goal = '+str(goal))
+    msg = String()
+    msg.data = str(goal)
+    pub_phase.publish(msg)
 
 ########################################## interface objects
 Button(master, text='goal 0', height = 10, width = 30, command=lambda:setGoal(0)).grid(row=0, column=0, sticky=W, pady=4)
