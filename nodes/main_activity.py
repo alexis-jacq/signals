@@ -59,7 +59,7 @@ Label(master, height = 10, textvariable = var_last_action).grid(row=2, sticky=EW
 def ros_loop(test):
 	while True:
 		rospy.Subscriber('action', String, onReceiveAction)
-		rospy.sleep(0.1)
+		rospy.sleep(0.3)
 	rospy.spin()
 
 ######################################### main loop

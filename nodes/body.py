@@ -105,26 +105,29 @@ if __name__=="__main__":
             y = pose[1]
             z = pose[2]
 
-            Zyaw = np.arctan(y/x) # this should be robot's origine yaw=0
-            Zpitch = np.arctan(-z/x) # this should be robot's origine pitch=0
+            # if the robot wants to look at the head :
+            Zyaw = np.arctan(y/x)
+            Zpitch = np.arctan(-z/x)
 
             euler = tf.transformations.euler_from_quaternion(rot)
+            '''
             r = euler[1]
             p = euler[0]
             y = euler[2]
             '''
             # if perspective taking:
             r = euler[1]
-            p = euler[0] - np.pi/2.
-            y = -np.sign(euler[2])*(np.abs(euler[2])-np.pi/2.)
-            '''
+            p = Zpitch + euler[0] - np.pi/2.
+            y = Zyaw - np.sign(euler[2])*(np.abs(euler[2])-np.pi/2.)
+
+
             msg = String()
             #msg.data = str(x)+"_"+str(y)+"_"+str(z)+"_"+str(r)+"_"+str(p)+"_"+str(y)
             msg.data = str(r)+"_"+str(p)+"_"+str(y)
             pub_signal.publish(msg.data)
             #TODO: slow a lot the frequency of publication
 
-        rospy.sleep(0.1)
+        rospy.sleep(0.3)
 
     ''' no robot for the moment
     sg.StiffnessOff(motionProxy)

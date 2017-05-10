@@ -63,7 +63,7 @@ if __name__=="__main__":
         rospy.Subscriber('signal', String, onReceiveSignal)
         rospy.Subscriber('reward', String, onReceiveReward)
 
-        if received_reward and received_signal:
+        if received_signal:#received_reward and received_signal:
             rospy.loginfo('update !')
             action = agent.update(reward, signal)
             rospy.loginfo('action: '+str(action))
@@ -73,5 +73,5 @@ if __name__=="__main__":
             received_signal = False
             received_reward = False
 
-        rospy.sleep(0.1)
+        rospy.sleep(0.3)
     rospy.spin()
