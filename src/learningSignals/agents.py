@@ -2,6 +2,7 @@
 #coding: utf-8
 
 import numpy as np
+import random
 
 import torch
 import torch.nn as nn
@@ -61,26 +62,14 @@ class Drqn():
         action = probs.multinomial()
         return action.data[0,0]
 
-    def learn(self, indice):
-        state = self.model.states[indice]
-        next_state = self.model.next_states[indice].detach()
-        action = self.model.actions[indice]
-        reward = self.model.rewards[indice]
-        hidden = self.model.hiddens[indice]
-        cell = self.model.cells[indice]
+    def learn(self, states,next_states,rewards,actions,hiddens,cells):
 
-        output, next_hidden, next_cell = self.model(state, [hidden, cell])
-        value = output[0,action]
-        output,_,_ = self.model(next_state, [next_hidden.detach(), next_hidden.detach()])
-        '''
-        next_action_probs = F.softmax(output+1e-16)
-        next_action = next_action_probs.multinomial().data[0,0]
-        next_value = output[0,next_action]
-        '''
-        next_value = output.max(1)[0]
-        #'''
-        expected = self.gamma*next_value + reward
-        td_loss = F.smooth_l1_loss(value, expected)
+        output, next_hiddens, next_cells = self.model(states, [hiddens, cells])
+        values = output.gather(1, actions.unsqueeze(1)).squeeze(1)
+        output,_,_ = self.model(next_states.detach(), [next_hiddens.detach(), next_hiddens.detach()])
+        next_values = output.max(1)[0].squeeze(1) * self.gamma
+        expected = next_values + rewards
+        td_loss = F.smooth_l1_loss(values, expected)
 
         self.optimizer.zero_grad()
         td_loss.backward(retain_variables=True)
@@ -96,7 +85,7 @@ class Drqn():
             self.model.actions.append(self.last_action)
             self.model.hiddens.append(self.last_hidden)
             self.model.cells.append(self.last_cell)
-            if len(self.model.states)>10000:
+            if len(self.model.states)>1000:
                 del self.model.states[0]
                 del self.model.next_states[0]
                 del self.model.rewards[0]
@@ -108,13 +97,21 @@ class Drqn():
         self.last_cell = self.model.cell_state
         action = self.select_action(new_state)
 
-        self.learn(np.random.choice(len(self.model.states)))
-        '''
-        if action==0:
-            self.learn(np.random.choice(len(self.model.states)))
+        memory  = zip(self.model.states,self.model.next_states,self.model.rewards,self.model.actions,self.model.hiddens,self.model.cells)
+        batch_size = 100
+        if len(memory)<batch_size:
+            sample = random.sample(memory,len(memory))
         else:
-            self.learn(-1)
-        '''
+            sample = random.sample(memory,batch_size)
+        mem_len = min(len(memory),batch_size)
+        batch_states = reduce(lambda x,y: torch.cat([x,y],0),[sample[j][0] for j in range(mem_len)])
+        batch_next_states = reduce(lambda x,y: torch.cat([x,y],0),[sample[j][1] for j in range(mem_len)])
+        batch_rewards = Variable(torch.Tensor([sample[j][2] for j in range(mem_len)]))
+        batch_actions = Variable(torch.LongTensor([sample[j][3] for j in range(mem_len)]))
+        batch_hiddens = reduce(lambda x,y: torch.cat([x,y],0),[sample[j][4] for j in range(mem_len)])
+        batch_cells = reduce(lambda x,y: torch.cat([x,y],0),[sample[j][5] for j in range(mem_len)])
+
+        self.learn(batch_states,batch_next_states,batch_rewards,batch_actions,batch_hiddens, batch_cells)
 
         self.last_action = action
         self.last_state = new_state
