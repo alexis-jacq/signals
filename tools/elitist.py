@@ -52,7 +52,7 @@ class ReplayAmorces(object):
     """ Facilitates memory replay. """
     def __init__(self, capacity,len_amorce):
         self.capacity = capacity
-        self.amorces = [torch.Tensor(len_amorce)]
+        self.amorces = [torch.Tensor(len_amorce)*0]
 
     def push(self, new_amorce):
         self.amorces.append(new_amorce)
@@ -115,7 +115,7 @@ if __name__ == '__main__':
     len_amorce = 50
     amorces1 = ReplayAmorces(1000, len_amorce)
     amorces2 = ReplayAmorces(1000, len_amorce)
-    amorces23= ReplayAmorces(1000, len_amorce)
+    amorces3= ReplayAmorces(1000, len_amorce)
 
     label1 = torch.zeros(1,3)
     label1[:,0] = 1
@@ -158,8 +158,8 @@ if __name__ == '__main__':
                 nloss1 = criterion(nout1, Variable(label1, requires_grad=False).double())
                 nloss12 = criterion(nout1, Variable(label2, requires_grad=False).double())
                 nloss13 = criterion(nout1, Variable(label3, requires_grad=False).double())
-                if nloss1.data[0] < min(nloss12.data[0],nloss13.data[0]):
-                    amorces2.push(subtarget1.data[0,0:len_amorce])
+                if nloss1.data[0] < min(nloss12.data[0],nloss13.data[0]):# or np.random.rand()>0.95:
+                    amorces1.push(subtarget1.data[0,0:len_amorce])
             if len(memory1.memory)>batch_size:
                 optimizerG1.zero_grad()
                 batchinput1, batchtarget1 = memory1.sample(batch_size)
