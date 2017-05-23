@@ -22,18 +22,19 @@ pub_trajectory_to_generate = rospy.Publisher('trajectory_to_generate', String, q
 
 ########################################## global values
 master = Tk()
+mode = 0
 var_mode = StringVar()
 signal = [0,0,0]
 received_signal = False
-window_capacity = 400
-window = []
-agent = Elitist(window_size=window_capacity/2, nb_moods=3)
+window_capacity = 100
+windows = [(1-2*np.random.rand(3,window_capacity))*0.01 for _ in range(3)]
+agent = Elitist(window_size=window_capacity/2, nb_moods=3, amorce_size=window_capacity/2)
 
 ########################################## functions
 def onReceiveSignal(msg):
     global signal
     global received_signal
-    global window
+    global windows
     global agent
     signal_msg = str(msg.data)
     new_signal = [float(i) for i in signal_msg.split('_')]
@@ -41,20 +42,19 @@ def onReceiveSignal(msg):
         received_signal = True
         rospy.loginfo('signal: '+str(new_signal))
         signal = new_signal
-        window.append(signal)
-        if len(window)>window_capacity:
-            del window[0]
-            #agent.learn(interval=zip(*window), mood=mode)
+        event = np.array(new_signal).reshape(3,1)
+        windows[mode] = np.concatenate((windows[mode][:,1:],event),1)
+        agent.learn(interval=windows[mode], mood=mode)
 
 def setMode(new_mode):
     global mode
     mode = new_mode
-    var_goal.set('current mode = '+str(mode))
+    var_mode.set('current mode = '+str(mode))
 
 def generate(mode):
-    trajectory = np.random.rand(1000) #agent.generate(mood=mode, length=1000)
+    trajectory = agent.generate(mood=mode, length=200)
     plt.figure()
-    plt.plot(trajectory,'b')
+    plt.plot(trajectory[0,:],'b')
     #plt.plot(trajectory[1,:],'r')
     #plt.plot(trajectory[2,:],'g')
     plt.show()
@@ -65,7 +65,7 @@ def generate(mode):
     '''
 
 def plot_window(length):
-    last_window = np.array(zip(*window))
+    last_window = np.array(windows[mode])
     plt.figure()
     plt.plot(last_window[0,:],'b')
     plt.show()
@@ -85,7 +85,7 @@ Label(master, height = 10, textvariable = var_mode).grid(row=3, sticky=EW, pady=
 def ros_loop(test):
     while(True):
         rospy.Subscriber('signal', String, onReceiveSignal)
-        rospy.sleep(0.1)
+        rospy.sleep(0.01)
 	rospy.spin()
 
 ######################################### main loop

@@ -130,7 +130,7 @@ if __name__=="__main__":
             pub_signal.publish(msg.data)
             #TODO: slow a lot the frequency of publication
 
-        rospy.sleep(0.1)
+        rospy.sleep(0.01)
 
     ''' no robot for the moment
     sg.StiffnessOff(motionProxy)
