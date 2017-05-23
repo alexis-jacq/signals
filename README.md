@@ -1,2 +1,2 @@
 # signals
-real-time human body signal recognition 
+real-time human body signal recognition and generation
