@@ -68,8 +68,8 @@ class Elitist():
         self.amorce_size = amorce_size
         self.discriminator = Discriminator(window_size,nb_moods).double()
         self.generators = [Generator(window_size).double() for _ in range(nb_moods)]
-        self.memories = [ReplayMemory(100000) for _ in range(nb_moods)]
-        self.amorces = [ReplayAmorces(1000, amorce_size) for _ in range(nb_moods)]
+        self.memories = [ReplayMemory(1000) for _ in range(nb_moods)]
+        self.amorces = [ReplayAmorces(100, amorce_size) for _ in range(nb_moods)]
         self.criterionG = nn.MSELoss()
         self.criterionD = nn.BCELoss()
         self.optimizersG = [optim.Adam(G.parameters(),lr = 0.001) for G in self.generators]
@@ -98,15 +98,14 @@ class Elitist():
                         for other_mood in other_moods]
         if loss.data[0] < min([other_loss.data[0] for other_loss in other_losses]):
             self.memories[mood].push((input,target))
-            if np.random.rand()>0.95:
-                self.amorces[mood].push(input.data[0,:self.amorce_size])
-        else:
-            nloss = self.criterionD(nout, Variable(self.labels[mood], requires_grad=False).double())
-            other_nlosses = [self.criterionD(nout, Variable(self.labels[other_mood], requires_grad=False).double()) \
-                            for other_mood in other_moods]
-            if nloss.data[0] < min([other_nloss.data[0] for other_nloss in other_nlosses]):
-                new_amorce = torch.cat((input.data[0,-self.amorce_size/2:],target.data[0,:self.amorce_size/2]),0)
-                self.amorces[mood].push(new_amorce)
+
+        out_test = self.discriminator(self.generators[mood](input))
+        loss_test = self.criterionD(out_test, Variable(self.labels[mood], requires_grad=False).double())
+        other_test_losses = [self.criterionD(out_test, Variable(self.labels[other_mood], requires_grad=False).double()) \
+                        for other_mood in other_moods]
+        if loss_test.data[0] < min([other_loss_test.data[0] for other_loss_test in other_test_losses]):
+            self.amorces[mood].push(input.data[0,-self.amorce_size:])
+            
         # train generators on memorized experiences
         for any_mood in range(self.nb_moods):
             if len(self.memories[any_mood].memory)>self.batch_size:
