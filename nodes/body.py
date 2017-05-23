@@ -126,11 +126,11 @@ if __name__=="__main__":
 
             msg = String()
             #msg.data = str(x)+"_"+str(y)+"_"+str(z)+"_"+str(r)+"_"+str(p)+"_"+str(y)
-            msg.data = str(r)+"_"+str(p)+"_"+str(y)
+            msg.data = str(p)+"_"+str(y)+"_"+str(r)
             pub_signal.publish(msg.data)
             #TODO: slow a lot the frequency of publication
 
-        rospy.sleep(0.3)
+        rospy.sleep(0.1)
 
     ''' no robot for the moment
     sg.StiffnessOff(motionProxy)

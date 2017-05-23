@@ -57,7 +57,7 @@ class ReplayAmorces(object):
         return np.random.choice(self.amorces)
 
 class Elitist():
-    def __init__(window_size = 200, nb_moods = 3, batch_size = 32, amorce_size=50):
+    def __init__(self, window_size=200, nb_moods=3, batch_size=32, amorce_size=50):
         self.nb_moods = nb_moods
         self.window_size = window_size
         self.batch_size = batch_size
@@ -77,9 +77,10 @@ class Elitist():
             self.labels.append(label_i)
 
     def learn(self, interval, mood):
-        interval = torch.Tensor(interval[:2*self.window_size])
-        input = Variable(interval[:window_size], requires_grad=True).unsqueeze(0)
-        target = Variable(interval[window_size:], requires_grad=False).unsqueeze(0)
+        interval = torch.Tensor(interval)
+        #TODO: handle multi-dimension signal
+        input = Variable(interval[0,:window_size], requires_grad=True).unsqueeze(0)
+        target = Variable(interval[0,window_size:2*self.window_size], requires_grad=False).unsqueeze(0)
         # train discriminator on the last experience:
         out = D(subinput)
         nout = D(subtarget)
@@ -115,4 +116,4 @@ class Elitist():
         signal[self.window_size:2*self.window_size] = output
         if repeat:
             pass #TODO
-        return signal
+        return signal.numpy()

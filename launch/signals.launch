@@ -6,8 +6,8 @@
       <arg name="show_tracking_arg" value="true" />
   </include>
 
-  <node pkg="signals" type="brain.py" name="brain">
-  </node>
+  <!--node pkg="signals" type="brain.py" name="brain">
+  </node-->
   <node pkg="signals" type="body.py" name="body">
   </node>
   <node pkg="signals" type="main_activity.py" name="main_activity">

@@ -54,7 +54,7 @@ def setMode(new_mode):
 def generate(mode):
     trajectory = np.random.rand(1000) #agent.generate(mood=mode, length=1000)
     plt.figure()
-    plt.plot(trajectory[],'b')
+    plt.plot(trajectory,'b')
     #plt.plot(trajectory[1,:],'r')
     #plt.plot(trajectory[2,:],'g')
     plt.show()
@@ -78,14 +78,14 @@ Button(master, text='generate 0', height = 10, width = 30, command=lambda:genera
 Button(master, text='generate 1', height = 10, width = 30, command=lambda:generate(1)).grid(row=1, column=1, sticky=W, pady=4)
 Button(master, text='generate 2', height = 10, width = 30, command=lambda:generate(2)).grid(row=1, column=2, sticky=W, pady=4)
 
-Button(master, text='plot window', height = 10, width = 30, command=plot_window(500)).grid(row=2, sticky=EW, pady=4)
+Button(master, text='plot window', height = 10, width = 30, command=lambda:plot_window(500)).grid(row=2, sticky=EW, pady=4)
 Label(master, height = 10, textvariable = var_mode).grid(row=3, sticky=EW, pady=4)
 
 ########################################## ros loop
 def ros_loop(test):
-	while True:
+    while(True):
         rospy.Subscriber('signal', String, onReceiveSignal)
-		rospy.sleep(0.1)
+        rospy.sleep(0.1)
 	rospy.spin()
 
 ######################################### main loop
