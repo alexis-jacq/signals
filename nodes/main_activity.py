@@ -44,7 +44,7 @@ def onReceiveSignal(msg):
         window.append(signal)
         if len(window)>window_capacity:
             del window[0]
-            agent.learn(interval=zip(*window), mood=mode)
+            #agent.learn(interval=zip(*window), mood=mode)
 
 def setMode(new_mode):
     global mode
@@ -52,17 +52,23 @@ def setMode(new_mode):
     var_goal.set('current mode = '+str(mode))
 
 def generate(mode):
-    trajectory = agent.generate(mood=mode, length=1000)
+    trajectory = np.random.rand(1000) #agent.generate(mood=mode, length=1000)
     plt.figure()
-    plt.plot(trajectory[0,:],'b')
-    plt.plot(trajectory[1,:],'r')
-    plt.plot(trajectory[2,:],'g')
+    plt.plot(trajectory[],'b')
+    #plt.plot(trajectory[1,:],'r')
+    #plt.plot(trajectory[2,:],'g')
     plt.show()
     '''
     msp = String()
     msg.data = '_'.join([])
     pub_trajectory_to_generate.publish(msg)
     '''
+
+def plot_window(length):
+    last_window = np.array(zip(*window))
+    plt.figure()
+    plt.plot(last_window[0,:],'b')
+    plt.show()
 
 ########################################## interface objects
 Button(master, text='learn 0', height = 10, width = 30, command=lambda:setMode(0)).grid(row=0, column=0, sticky=W, pady=4)
@@ -71,13 +77,15 @@ Button(master, text='learn 2', height = 10, width = 30, command=lambda:setMode(2
 Button(master, text='generate 0', height = 10, width = 30, command=lambda:generate(0)).grid(row=1, column=0, sticky=W, pady=4)
 Button(master, text='generate 1', height = 10, width = 30, command=lambda:generate(1)).grid(row=1, column=1, sticky=W, pady=4)
 Button(master, text='generate 2', height = 10, width = 30, command=lambda:generate(2)).grid(row=1, column=2, sticky=W, pady=4)
-Label(master, height = 10, textvariable = var_mode).grid(row=2, sticky=EW, pady=4)
+
+Button(master, text='plot window', height = 10, width = 30, command=plot_window(500)).grid(row=2, sticky=EW, pady=4)
+Label(master, height = 10, textvariable = var_mode).grid(row=3, sticky=EW, pady=4)
 
 ########################################## ros loop
 def ros_loop(test):
 	while True:
         rospy.Subscriber('signal', String, onReceiveSignal)
-		rospy.sleep(0.3)
+		rospy.sleep(0.1)
 	rospy.spin()
 
 ######################################### main loop
