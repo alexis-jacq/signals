@@ -11,6 +11,7 @@ import torch.optim as optim
 import torch.autograd as autograd
 from torch.autograd import Variable
 
+#TODO: should work with 1d convolutions
 class Generator(nn.Module):
     def __init__(self, size):
         super(Generator, self).__init__()
@@ -21,6 +22,7 @@ class Generator(nn.Module):
         output = self.fc2(x)
         return output
 
+#TODO: should work with 1d convolutions
 class Discriminator(nn.Module):
     def __init__(self, size, nb_moods):
         super(Discriminator, self).__init__()
@@ -82,7 +84,7 @@ class Elitist():
 
     def learn(self, interval, mood):
         interval = torch.DoubleTensor(interval)
-        #TODO: handle multi-dimension signal
+        #TODO: handle multi-dimension signal (maybe with chanels for 1d conv)
         input = Variable(interval[0,:self.window_size], requires_grad=True).unsqueeze(0)
         target = Variable(interval[0,self.window_size:2*self.window_size], requires_grad=False).unsqueeze(0)
         # train discriminator on the last experience:
@@ -99,13 +101,14 @@ class Elitist():
         if loss.data[0] < min([other_loss.data[0] for other_loss in other_losses]):
             self.memories[mood].push((input,target))
 
+        #TODO: do this for all activated moods (+ moods activations)
         out_test = self.discriminator(self.generators[mood](input))
         loss_test = self.criterionD(out_test, Variable(self.labels[mood], requires_grad=False).double())
         other_test_losses = [self.criterionD(out_test, Variable(self.labels[other_mood], requires_grad=False).double()) \
                         for other_mood in other_moods]
         if loss_test.data[0] < min([other_loss_test.data[0] for other_loss_test in other_test_losses]):
             self.amorces[mood].push(input.data[0,-self.amorce_size:])
-            
+
         # train generators on memorized experiences
         for any_mood in range(self.nb_moods):
             if len(self.memories[any_mood].memory)>self.batch_size:
@@ -130,5 +133,5 @@ class Elitist():
         signal[0,self.window_size:2*self.window_size] = output.data[:,:].squeeze(0)
         signal[0,2*self.window_size:3*self.window_size] = output2.data[:,:].squeeze(0)
         if repeat:
-            pass #TODO
+            pass #TODO generate following signal. if discriminator not ok, first do amorce then add following signal
         return signal.numpy()
