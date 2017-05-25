@@ -11,18 +11,19 @@ import torch.optim as optim
 import torch.autograd as autograd
 from torch.autograd import Variable
 
-#TODO: should work with 1d convolutions
+
 class Generator(nn.Module):
     def __init__(self, size):
         super(Generator, self).__init__()
         self.fc1 = nn.Linear(size, 20)
         self.fc2 = nn.Linear(20, size)
+        self.cv1 = nn.Conv1d(1, 1, 9, 1, 4, 1) # local corrector
     def forward(self, input):
         x = F.relu(self.fc1(input))
-        output = self.fc2(x)
-        return output
-
-#TODO: should work with 1d convolutions
+        x = self.fc2(x)
+        output = self.cv1(x.unsqueeze(1))
+        return output.squeeze(1)
+'''
 class Discriminator(nn.Module):
     def __init__(self, size, nb_moods):
         super(Discriminator, self).__init__()
@@ -32,7 +33,19 @@ class Discriminator(nn.Module):
         x = F.relu(self.fc1(input))
         output = F.sigmoid(self.fc2(x))
         return output
-
+'''
+class Discriminator(nn.Module):
+    def __init__(self, size, nb_moods):
+        super(Discriminator, self).__init__()
+        self.h_size = 2#int(np.floor((size-1)/4)+1)
+        self.cv = nn.Conv1d(1, 10, 49, (size-1), 24, 1)
+        self.fc = nn.Linear(10*self.h_size, nb_moods)
+    def forward(self, input):
+        x = F.relu(self.cv(input.unsqueeze(1)))
+        x = x.view(-1, 10*self.h_size)
+        output = F.sigmoid(self.fc(x))
+        return output
+#'''
 class ReplayMemory(object):
     """ Facilitates memory replay. """
     def __init__(self, capacity):
