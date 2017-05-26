@@ -53,11 +53,15 @@ def setMode(new_mode):
 
 def generate(mode):
     trajectory = agent.generate(mood=mode, length=200)
-    plt.figure()
+    fig = plt.figure(1)
+    fig.add_subplot(311)
     plt.plot(trajectory[0,:],'b')
-    #plt.plot(trajectory[1,:],'r')
-    #plt.plot(trajectory[2,:],'g')
+    fig.add_subplot(312)
+    plt.plot(trajectory[1,:],'r')
+    fig.add_subplot(313)
+    plt.plot(trajectory[2,:],'g')
     plt.show()
+    # TODO: send trajectory to the robot
     '''
     msp = String()
     msg.data = '_'.join([])
@@ -66,8 +70,13 @@ def generate(mode):
 
 def plot_window(length):
     last_window = np.array(windows[mode])
-    plt.figure()
+    fig = plt.figure(1)
+    fig.add_subplot(311)
     plt.plot(last_window[0,:],'b')
+    fig.add_subplot(312)
+    plt.plot(last_window[1,:],'r')
+    fig.add_subplot(313)
+    plt.plot(last_window[2,:],'g')
     plt.show()
 
 ########################################## interface objects
@@ -77,7 +86,6 @@ Button(master, text='learn 2', height = 10, width = 30, command=lambda:setMode(2
 Button(master, text='generate 0', height = 10, width = 30, command=lambda:generate(0)).grid(row=1, column=0, sticky=W, pady=4)
 Button(master, text='generate 1', height = 10, width = 30, command=lambda:generate(1)).grid(row=1, column=1, sticky=W, pady=4)
 Button(master, text='generate 2', height = 10, width = 30, command=lambda:generate(2)).grid(row=1, column=2, sticky=W, pady=4)
-
 Button(master, text='plot window', height = 10, width = 30, command=lambda:plot_window(500)).grid(row=2, sticky=EW, pady=4)
 Label(master, height = 10, textvariable = var_mode).grid(row=3, sticky=EW, pady=4)
 

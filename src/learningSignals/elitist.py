@@ -17,12 +17,13 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
         self.fc1 = nn.Linear(size, 20)
         self.fc2 = nn.Linear(20, size)
-        self.cv1 = nn.Conv1d(1, 1, 9, 1, 4, 1) # local corrector
+        #self.cv1 = nn.Conv1d(1, 1, 5, 1, 2, 1) # local corrector
     def forward(self, input):
         x = F.relu(self.fc1(input))
         x = self.fc2(x)
-        output = self.cv1(x.unsqueeze(1))
-        return output.squeeze(1)
+        return x
+        #output = self.cv1(x.unsqueeze(1))
+        #return output.squeeze(1)
 '''
 class Discriminator(nn.Module):
     def __init__(self, size, nb_moods):
@@ -35,13 +36,14 @@ class Discriminator(nn.Module):
         return output
 '''
 class Discriminator(nn.Module):
-    def __init__(self, size, nb_moods):
+    def __init__(self, size, nb_moods, nb_channels):
         super(Discriminator, self).__init__()
         self.h_size = 2#int(np.floor((size-1)/4)+1)
-        self.cv = nn.Conv1d(1, 10, 49, (size-1), 24, 1)
+        self.cv = nn.Conv1d(nb_channels, 10, 49, (size-1), 24, 1)
         self.fc = nn.Linear(10*self.h_size, nb_moods)
     def forward(self, input):
-        x = F.relu(self.cv(input.unsqueeze(1)))
+        #x = F.relu(self.cv(input.unsqueeze(1)))
+        x = F.relu(self.cv(input))
         x = x.view(-1, 10*self.h_size)
         output = F.sigmoid(self.fc(x))
         return output
@@ -76,18 +78,19 @@ class ReplayAmorces(object):
         return np.random.choice(self.amorces)
 
 class Elitist():
-    def __init__(self, window_size=200, nb_moods=3, batch_size=32, amorce_size=100):
+    def __init__(self, window_size=200, nb_moods=3, nb_channels=3, batch_size=32, amorce_size=100):
         self.nb_moods = nb_moods
+        self.nb_channels = nb_channels
         self.window_size = window_size
         self.batch_size = batch_size
         self.amorce_size = amorce_size
-        self.discriminator = Discriminator(window_size,nb_moods).double()
-        self.generators = [Generator(window_size).double() for _ in range(nb_moods)]
-        self.memories = [ReplayMemory(1000) for _ in range(nb_moods)]
-        self.amorces = [ReplayAmorces(100, amorce_size) for _ in range(nb_moods)]
+        self.discriminator = Discriminator(window_size,nb_moods,nb_channels).double()
+        self.generators = [[Generator(window_size).double() for _ in range(nb_moods)] for _ in range(nb_channels)]
+        self.memories = [ReplayMemory(10000) for _ in range(nb_moods)]
+        self.amorces = [ReplayAmorces(1000, amorce_size) for _ in range(nb_moods)]
         self.criterionG = nn.MSELoss()
         self.criterionD = nn.BCELoss()
-        self.optimizersG = [optim.Adam(G.parameters(),lr = 0.001) for G in self.generators]
+        self.optimizersG = [[optim.Adam(G.parameters(),lr = 0.001) for G in self.generators[channel]] for channel in range(nb_channels)]
         self.optimizerD = optim.Adam(self.discriminator.parameters(),lr = 0.001)
         self.labels = []
         for i in range(nb_moods):
@@ -97,39 +100,43 @@ class Elitist():
 
     def learn(self, interval, mood):
         interval = torch.DoubleTensor(interval)
-        #TODO: handle multi-dimension signal (maybe with chanels for 1d conv)
-        input = Variable(interval[0,:self.window_size], requires_grad=True).unsqueeze(0)
-        target = Variable(interval[0,self.window_size:2*self.window_size], requires_grad=False).unsqueeze(0)
+        input = Variable(interval[:,:self.window_size], requires_grad=True).unsqueeze(0)
+        target = Variable(interval[:,self.window_size:2*self.window_size], requires_grad=True).unsqueeze(0)
         # train discriminator on the last experience:
         self.optimizerD.zero_grad()
-        out = self.discriminator(input)
-        nout = self.discriminator(target)
-        loss = self.criterionD(out, Variable(self.labels[mood], requires_grad=False).double())
+        out1 = self.discriminator(input)
+        out2 = self.discriminator(target)
+        loss1 = self.criterionD(out1, Variable(self.labels[mood], requires_grad=False).double())
+        loss2 = self.criterionD(out2, Variable(self.labels[mood], requires_grad=False).double())
+        loss = loss1+loss2
         loss.backward()
         self.optimizerD.step()
         # if signal detected --> remember it
         other_moods = set(range(self.nb_moods))-{mood}
-        other_losses = [self.criterionD(out, Variable(self.labels[other_mood], requires_grad=False).double()) \
+        other_losses = [self.criterionD(out2, Variable(self.labels[other_mood], requires_grad=False).double()) \
                         for other_mood in other_moods]
-        if loss.data[0] < min([other_loss.data[0] for other_loss in other_losses]):
-            self.memories[mood].push((input,target))
+        if loss2.data[0]*2 < min([other_loss.data[0] for other_loss in other_losses]): # if target is recognizable
+            self.memories[mood].push((input,target.detach()))
 
         #TODO: do this for all activated moods (+ moods activations)
-        out_test = self.discriminator(self.generators[mood](input))
+        generateds = map(lambda (x,c):x.forward(input[:,c,:]), [(self.generators[c][mood],c) for c in range(self.nb_channels)])
+        generated = reduce(lambda x,y:torch.cat((x,y),0), generateds).unsqueeze(0)
+        out_test = self.discriminator(torch.cat((input[:,:,-25:],generated[:,:,:25]),2))
         loss_test = self.criterionD(out_test, Variable(self.labels[mood], requires_grad=False).double())
         other_test_losses = [self.criterionD(out_test, Variable(self.labels[other_mood], requires_grad=False).double()) \
                         for other_mood in other_moods]
-        if loss_test.data[0] < min([other_loss_test.data[0] for other_loss_test in other_test_losses]):
-            self.amorces[mood].push(input.data[0,-self.amorce_size:])
+        if loss_test.data[0]*2 < min([other_loss_test.data[0] for other_loss_test in other_test_losses]):
+            self.amorces[mood].push(input.data[:,:,-self.amorce_size:])
 
         # train generators on memorized experiences
         for any_mood in range(self.nb_moods):
             if len(self.memories[any_mood].memory)>self.batch_size:
-                self.optimizersG[any_mood].zero_grad()
                 batchinput, batchtarget = self.memories[any_mood].sample(self.batch_size)
-                loss = self.criterionG(self.generators[any_mood](batchinput),batchtarget)
-                loss.backward(retain_variables=True)
-                self.optimizersG[any_mood].step()
+                for channel in range(self.nb_channels):
+                    self.optimizersG[channel][any_mood].zero_grad()
+                    loss = self.criterionG(self.generators[channel][any_mood](batchinput[channel,:]),batchtarget[channel,:])
+                    loss.backward(retain_variables=True)
+                    self.optimizersG[channel][any_mood].step()
                 # also train discriminator:
                 self.optimizerD.zero_grad()
                 out = self.discriminator(batchinput)
@@ -138,13 +145,18 @@ class Elitist():
                 self.optimizerD.step()
 
     def generate(self, mood, length=400, repeat=False, delay=200):
-        signal = 0.01*torch.rand(1,length).double()
-        signal[0,self.window_size-self.amorce_size:self.window_size] = self.amorces[mood].sample()
-        input = Variable(signal[0,:self.window_size]).unsqueeze(0)
-        output = self.generators[mood](input)
-        output2 = self.generators[mood](output)
-        signal[0,self.window_size:2*self.window_size] = output.data[:,:].squeeze(0)
-        signal[0,2*self.window_size:3*self.window_size] = output2.data[:,:].squeeze(0)
+        signal = 0.01*torch.rand(self.nb_channels,length).double()
+        signal[:,self.window_size-self.amorce_size:self.window_size] = self.amorces[mood].sample()
+        input = Variable(signal[:,:self.window_size]).unsqueeze(0)
+
+        generateds = map(lambda (x,c):x.forward(input[:,c,:]), [(self.generators[c][mood],c) for c in range(self.nb_channels)])
+        generated = reduce(lambda x,y:torch.cat((x,y),0), generateds).unsqueeze(0)
+
+        generateds2 = map(lambda (x,c):x.forward(generated[:,c,:]), [(self.generators[c][mood],c) for c in range(self.nb_channels)])
+        generated2 = reduce(lambda x,y:torch.cat((x,y),0), generateds2).unsqueeze(0)
+
+        signal[:,self.window_size:2*self.window_size] = generated.data[:,:].squeeze(0)
+        signal[:,2*self.window_size:3*self.window_size] = generated2.data[:,:].squeeze(0)
         if repeat:
             pass #TODO generate following signal. if discriminator not ok, first do amorce then add following signal
         return signal.numpy()
