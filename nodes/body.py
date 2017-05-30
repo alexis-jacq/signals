@@ -11,31 +11,25 @@ import tf
 from geometry_msgs.msg import PointStamped
 from std_msgs.msg import String, Empty, Header
 
-''' no robot for the moment
-from naoMoves import nao_moves as nm
+import naoMoves.nao_moves as nm
 from naoqi import ALProxy
 from naoqi import ALBroker
 from naoqi import ALModule
-'''
 
 ############################################# publish obs to brain
 pub_signal = rospy.Publisher('signal', String, queue_size = 1)
 
 ############################################# global values
-''' no robot for the moment
 #NAO_IP = "192.168.1.64" #HACK : this should not be hardcoded !
-NAO_IP = "146.193.224.102" #HACK : this should not be hardcoded !
+NAO_IP = "146.193.224.25" #HACK : this should not be hardcoded !
 port = 9559
-speed = 0.1
-angles = [0,0] #HACK : will be longer in futur !
-'''
-Zpitch = 0
-Zyaw = 0
+speed = 0.2
 stop = False
 phase = 0
 t = 0
+action = False
+angles_py = None
 
-''' no robot for the moment
 ############################################# init proxies
 myBroker = ALBroker("myBroker","0.0.0.0",0,NAO_IP,port)
 hasFallen = False
@@ -44,20 +38,21 @@ memoryProxy = ALProxy("ALMemory", NAO_IP, port)
 postureProxy = ALProxy("ALRobotPosture", NAO_IP, port)
 faceProxy = ALProxy("ALFaceDetection", NAO_IP, port)
 tracker = ALProxy("ALTracker", NAO_IP, port)
-'''
 
 ############################################# what if new action
 
 #TODO: place origine facing the human (instead of p+y = zero)
 
-''' no robot for the moment
-def onReceiveAction(msg):
+def onTrajectory(msg):
+    global action
+    global angles_py
     action_msg = str(msg.data)
     angles = [float(angle) for angle in action_msg.split("_")]
-    angle[0] += Zyaw
-    angle[1] += Zpitch
+    angles_p = angles[:len(angles)/2]
+    angles_y = angles[len(angles)/2:]
+    rospy.loginfo(action_msg)
+    angles_py = zip(angles_p,angles_y)
     action = True
-'''
 
 def onExit(msg):
     global stop
@@ -69,9 +64,9 @@ if __name__=="__main__":
 
     rospy.init_node("body")
 
-    ''' no robot for the moment
-    sg.StiffnessOn(motionProxy)
-    '''
+    nm.StiffnessOn(motionProxy)
+    tracker.registerTarget("Face", 1)
+    tracker.track("Face")
 
     listener = tf.TransformListener()
     face_found = False
@@ -86,17 +81,18 @@ if __name__=="__main__":
     while not stop:
 
         test  = listener.getFrameStrings()
-        ''' no robot for the moment
         action = False
-        '''
 
         rospy.Subscriber('exit_topic', String, onExit)
+        rospy.Subscriber('trajectory', String, onTrajectory)
 
-        ''' no robot for the moment
         if action:
-            time.sleep(1)
-            nm.head(motionProxy, speed, angles)
-        '''
+            tracker.stopTracker()
+            for (p,y) in angles_py:
+                nm.head(motionProxy, speed, [p,y])
+                time.sleep(0.1)
+            tracker.track("Face")
+
 
         if "base_footprint" in test and "robot_head" in test and "face_0" in test:
             #rospy.loginfo("frames found! (head condition")
@@ -132,8 +128,6 @@ if __name__=="__main__":
 
         rospy.sleep(0.01)
 
-    ''' no robot for the moment
-    sg.StiffnessOff(motionProxy)
-    '''
+    nm.StiffnessOff(motionProxy)
 
     rospy.spin()

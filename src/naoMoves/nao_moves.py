@@ -43,10 +43,11 @@ def trackFace(motionProxy,tracker):
 	tracker.track(targetName)
 
 def head(motionProxy, speed, angles):
-	yaw = angles[0] * np.abs(-1.3-1.3)/2. + (-1.3+1.3)/2.
-	pitch = angles[1] * np.abs(-0.5-0.4)/2. + (-0.5+0.4)/2.
+	yaw = angles[1] * np.abs(-1.3-1.3)/2. + (-1.3+1.3)/2.
+	pitch = angles[0] * np.abs(-0.5-0.4)/2. + (-0.5+0.4)/2.
 	motionProxy.setAngles("HeadYaw", yaw, speed)
 	motionProxy.setAngles("HeadPitch", pitch, speed)
+	#time.sleep(0.02)
 
 def arms(motionProxy,tts,speed, angles):
 	LShoulderPitch = angles[0] * np.abs(-0.5-0.1)/2. + (-0.5+0.1)/2.

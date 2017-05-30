@@ -18,7 +18,7 @@ from learningSignals.elitist import Elitist
 
 ########################################## ros publishers
 # for body:
-pub_trajectory_to_generate = rospy.Publisher('trajectory_to_generate', String, queue_size=1)
+pub_trajectory = rospy.Publisher('trajectory', String, queue_size=1)
 
 ########################################## global values
 master = Tk()
@@ -53,6 +53,7 @@ def setMode(new_mode):
 
 def generate(mode):
     trajectory = agent.generate(mood=mode, length=200)
+    '''
     fig = plt.figure(1)
     fig.add_subplot(311)
     plt.plot(trajectory[0,:],'b')
@@ -61,12 +62,13 @@ def generate(mode):
     fig.add_subplot(313)
     plt.plot(trajectory[2,:],'g')
     plt.show()
-    # TODO: send trajectory to the robot
     '''
-    msp = String()
-    msg.data = '_'.join([])
-    pub_trajectory_to_generate.publish(msg)
-    '''
+    #send trajectory p and y (not r) to the robot
+    msg = String()
+    msg.data = '_'.join([str(i) for i in list(trajectory[0,:50])+list(trajectory[1,:50])])
+    #traj = np.sin(np.array(range(100)))
+    #msg.data = '_'.join([str(i) for i in traj])
+    pub_trajectory.publish(msg)
 
 def plot_window(length):
     last_window = np.array(windows[mode])
